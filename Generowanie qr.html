@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WŁODI QR CODE GENERATOR</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; text-align: center; }
+        .qr-container { margin-bottom: 20px; display: inline-block; }
+        .qr-text { margin-top: 10px; font-weight: bold; }
+        #qrCodes { display: flex; flex-wrap: wrap; justify-content: center; gap: 20px; }
+        .settings { margin-bottom: 20px; }
+    </style>
+</head>
+<body>
+    <h1>WŁODI QR CODE GENERATOR</h1>
+
+    <div class="settings">
+        <label for="qrSize">Rozmiar kodu QR (default: 256px): </label>
+        <input type="number" id="qrSize" value="256" min="100" step="10"><br><br>
+        <label for="textSize">Rozmiar tekstu (default: 16px): </label>
+        <input type="number" id="textSize" value="16" min="8" step="1"><br><br>
+    </div>
+
+    <textarea id="textList" rows="6" cols="50" placeholder="Tu wpisz tekst jaki chcesz zamienić na kod QR.
+Każda linia teskstu to osobny kod QR.
+
+JEŚLI CHCESZ ZAPISAĆ JEDEN KOD QR TO WYSTARCZY NA NIEGO KLIKNĄĆ."></textarea>
+    <br><br>
+    <button onclick="generateQRCodeList()">Generuj QR kod</button>
+    <button onclick="downloadAllQRCodes()">Pobierz wszystkie QR kody</button>
+    <div id="qrCodes"></div>
+
+    <script>
+        function generateQRCode(text, container, qrSize, textSize) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+
+            // Create QR code on temporary div
+            const tempDiv = document.createElement('div');
+            new QRCode(tempDiv, { text: text, width: qrSize, height: qrSize });
+            const qrCanvas = tempDiv.querySelector('canvas');
+
+            // Resize the canvas to fit QR code and the text with padding
+            canvas.width = qrSize + 40;
+            canvas.height = qrSize + 70;
+
+            // Fill the canvas with white background
+            context.fillStyle = 'white';
+            context.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw the QR code on the main canvas
+            context.drawImage(qrCanvas, 20, 10);
+
+            // Add the text below the QR code with the user-defined text size
+            context.font = textSize + 'px Arial';
+            context.textAlign = 'center';
+            context.fillStyle = 'black';
+            context.fillText(text, canvas.width / 2, qrSize + 50);
+
+            // Add canvas to container
+            const qrDiv = document.createElement('div');
+            qrDiv.className = 'qr-container';
+            qrDiv.appendChild(canvas);
+            container.appendChild(qrDiv);
+
+            // Add click-to-download functionality with filename based on the QR content
+            canvas.addEventListener('click', () => downloadCanvasAsImage(canvas, `${text}.png`));
+
+            return canvas;
+        }
+
+        function generateQRCodeList() {
+            const textList = document.getElementById('textList').value.split('\n');
+            const qrCodesContainer = document.getElementById('qrCodes');
+            qrCodesContainer.innerHTML = ''; // Clear previous QR codes
+
+            const qrSize = parseInt(document.getElementById('qrSize').value) || 256;
+            const textSize = parseInt(document.getElementById('textSize').value) || 16;
+
+            textList.forEach(text => {
+                if (text.trim() !== '') {
+                    generateQRCode(text.trim(), qrCodesContainer, qrSize, textSize);
+                }
+            });
+        }
+
+        function downloadCanvasAsImage(canvas, text) {
+            const link = document.createElement('a');
+            link.download = `${text}.png`; // Use the QR code text as the filename
+            link.href = canvas.toDataURL();
+            link.click();
+        }
+
+        function downloadAllQRCodes() {
+            const qrContainers = document.querySelectorAll('.qr-container canvas');
+            qrContainers.forEach((canvas, index) => {
+                const text = document.getElementById('textList').value.split('\n')[index].trim();
+                downloadCanvasAsImage(canvas, text);
+            });
+        }
+    </script>
+</body>
+</html>
